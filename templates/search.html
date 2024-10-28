@@ -1,0 +1,64 @@
+{% extends "navigation.html" %}
+{% load static %}
+{% load custom_tags %}
+
+{% block title %}Search{% endblock title %}
+{% block body %}
+<div class="popup" id="ratingPopup">
+  <div class="popup-content">
+      <button class="close pop-button" onclick="closePopup()">&times;</button>
+      <h2>Rate this movie</h2>
+      <div class="star-rating" id="rate-form">
+          <button class="fa fa-star rt-btn" type="submit" data-value="1"></button
+          ><button class="fa fa-star rt-btn" type="submit" data-value="2"></button
+          ><button class="fa fa-star rt-btn" type="submit" data-value="3"></button
+          ><button class="fa fa-star rt-btn" type="submit" data-value="4"></button
+          ><button class="fa fa-star rt-btn" type="submit" data-value="5"></button
+          ><button class="fa fa-star rt-btn" type="submit" data-value="6"></button
+          ><button class="fa fa-star rt-btn" type="submit" data-value="7"></button
+          ><button class="fa fa-star rt-btn" type="submit" data-value="8"></button
+          ><button class="fa fa-star rt-btn" type="submit" data-value="9"></button
+          ><button class="fa fa-star rt-btn" type="submit" data-value="10"></button>
+      </div>
+    {% if user.is_authenticated %}
+      <button class="pop-button" onclick="submitRating()">Rate</button>
+    {% else %}
+      <button class="pop-button" onclick="redir_register()">Rate</button>
+    {% endif %}
+  </div>
+</div>
+<div class="row mb-4 watchlist-container">
+  <h1 class="display-7">Results For "{{search}}"</h1>
+  {% for movie in movies %}
+  <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+      <div class="card movie-card">
+          <a href="/movie/{{movie.id}}/">
+              <img class="card-img-top" src="{{movie.images_set.get.image.url}}" alt="Card image cap">
+          </a>
+          <div class="card-body">
+              <p class="card-text">{{movie.name}}</p>
+              {% if movie.id in rated_movies %}
+              {% with ratings|get_movie_rating:movie as mov_rating %}
+              <button class="openPopupButton btn btn-rating" onclick="openPopup({{movie.id}}, {{mov_rating.score}})">
+                  <span>
+                      <span id="movie_text-{{movie.id}}" class="fa fa-star"> {{mov_rating.score}}</span>
+                  </span>
+              </button>
+              {% endwith %}
+              {% else %}
+              <button class="openPopupButton btn btn-rating" onclick="openPopup({{movie.id}}, 0)">
+                  <span>
+                      <span id="movie_text-{{movie.id}}" class="fa fa-star"> Rate</span>
+                  </span>
+              </button>
+              {% endif %}
+              <button class="watchLaterButton btn btn-watch-later" onclick="toggleWatchLater({{movie.id}})">
+                  <span id="watch_later_icon-{{movie.id}}" class="fa fa-clock-o" style="color: {% if movie.id in watch_later_movies %}gold{% else %}gray{% endif %};"></span>
+              </button>
+          </div>
+      </div>
+  </div>
+  {% endfor %}
+</div> 
+   
+{% endblock body %}

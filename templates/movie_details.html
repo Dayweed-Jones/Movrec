@@ -1,0 +1,158 @@
+{% extends "navigation.html" %}
+{% load static %}
+{% load custom_tags %}
+
+{% block title %}{{ movie.name }}{% endblock title %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css">
+{% endblock styles %}
+
+{% block body %}
+
+<div class="popup" id="ratingPopup">
+    <div class="popup-content">
+        <button class="close pop-button" onclick="closePopup()">&times;</button>
+        <h2>Rate this movie</h2>
+        <div class="star-rating" id="rate-form">
+            <button class="fa fa-star rt-btn" type="submit" data-value="1"></button
+            ><button class="fa fa-star rt-btn" type="submit" data-value="2"></button
+            ><button class="fa fa-star rt-btn" type="submit" data-value="3"></button
+            ><button class="fa fa-star rt-btn" type="submit" data-value="4"></button
+            ><button class="fa fa-star rt-btn" type="submit" data-value="5"></button
+            ><button class="fa fa-star rt-btn" type="submit" data-value="6"></button
+            ><button class="fa fa-star rt-btn" type="submit" data-value="7"></button
+            ><button class="fa fa-star rt-btn" type="submit" data-value="8"></button
+            ><button class="fa fa-star rt-btn" type="submit" data-value="9"></button
+            ><button class="fa fa-star rt-btn" type="submit" data-value="10"></button>
+        </div>
+        {% if user.is_authenticated %}
+          <button class="pop-button" onclick="submitRating()">Rate</button>
+        {% else %}
+          <button class="pop-button" onclick="redir_register()">Rate</button>
+        {% endif %}
+    </div>
+  </div>
+
+
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-8">
+      <h1 class="display-7">{{ movie.name }}</h1>
+    </div>
+    <div class="col-md-4 d-flex justify-content-end btn-desc-div">
+      {% if movie.id in rated_movies and user.is_authenticated %}
+      {% with ratings|get_movie_rating:movie as mov_rating %}
+        <button class="openPopupButton btn btn-rating-desc" onclick="openPopup({{movie.id}}, {{mov_rating.score}})">
+          <span>
+              <span id="movie_text-{{movie.id}}" class="fa fa-star"> {{mov_rating.score}}</span>
+          </span>
+        </button>
+      {% endwith %}
+      {% else %}
+        <button class="openPopupButton btn-rating-desc" onclick="openPopup({{movie.id}}, 0)">
+          <span>
+              <span id="movie_text-{{movie.id}}" class="fa fa-star"> Rate</span>
+          </span>
+        </button>
+      {% endif %}
+      <!-- Watch Later Toggle Button -->
+      <button class="watchLaterButton btn btn-watch-later-desc" onclick="toggleWatchLater({{movie.id}})">
+        <span id="watch_later_icon-{{movie.id}}" class="fa fa-clock-o" style="color: {% if movie.id in watch_later_movies %}gold{% else %}gray{% endif %};"></span>
+      </button>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            {% if poster %}
+                <img src="{{ poster.image.url }}" alt="{{ movie.name }} Poster" class="img-fluid rounded shadow">
+            {% else %}
+                <p class="text-center text-muted">No poster available.</p>
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            <ul class="list-inline">
+                {% for genre in movie.genres.all %}
+                    <li class="list-inline-item badge bg-secondary">{{ genre.genre }}</li>
+                {% endfor %}
+            </ul>
+            <p><strong>Release Date:</strong> {{ movie.release_date }}</p>
+            {% if directors|length > 0 %}
+                {% comment %} <p style="display: inline;"><strong></p></strong> {% endcomment %}
+                {% for director in directors %}
+                            <span class="badge bg-primary rounded-pill marg">{{ director.person_id.name }}</span
+                                >{% if director.job != None %} - <strong>{{ director.job }}</strong> {% endif %}
+                {% endfor %}
+            {% endif %}
+                <br>
+            {% if writers|length > 0 %}
+                {% comment %} <p style="display: inline;"><strong></p></strong> {% endcomment %}
+                {% for writer in writers %}
+                            <span class="badge bg-primary rounded-pill marg">{{ writer.person_id.name }}</span
+                                >{% if writer.job != None %} - <strong>{{ writer.job }}</strong> {% endif %}
+                {% endfor %}
+            {% endif %}
+            
+            <div class="video-container mar">
+                <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/lirBhHXvDSg" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+    <p class="description"><strong>Description:</strong> {{ movie.description }}</p>
+    <div class="mt-4 cast-section">
+        <h2>
+            <a class="cast-toggle" data-bs-toggle="collapse" href="#castList" role="button" aria-expanded="false" aria-controls="castList">
+                Cast <span class="indicator float-end">[+]</span>
+            </a>
+        </h2>
+        <div class="collapse mt-3" id="castList">
+            <ul class="list-group list-group-flush">
+                {% for actor in actors %}
+                    <li class="list-group-item">
+                        <span class="badge bg-primary rounded-pill">{{ actor.person_id.name }}</span> as <strong>{{ actor.character }}</strong>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row mb-4 watchlist-container">
+  <h1 class="display-7">Similair To</h1>
+  {% for movie in similair %}
+  <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+      <div class="card movie-card">
+          <a href="/movie/{{movie.id}}/">
+              <img class="card-img-top" src="{{movie.images_set.get.image.url}}" alt="Card image cap">
+          </a>
+          <div class="card-body">
+              <p class="card-text">{{movie.name}}</p>
+              {% if movie.id in rated_movies %}
+              {% with ratings|get_movie_rating:movie as mov_rating %}
+              <button class="openPopupButton btn btn-rating" onclick="openPopup({{movie.id}}, {{mov_rating.score}})">
+                  <span>
+                      <span id="movie_text-{{movie.id}}" class="fa fa-star"> {{mov_rating.score}}</span>
+                  </span>
+              </button>
+              {% endwith %}
+              {% else %}
+              <button class="openPopupButton btn btn-rating" onclick="openPopup({{movie.id}}, 0)">
+                  <span>
+                      <span id="movie_text-{{movie.id}}" class="fa fa-star"> Rate</span>
+                  </span>
+              </button>
+              {% endif %}
+              <button class="watchLaterButton btn btn-watch-later" onclick="toggleWatchLater({{movie.id}})">
+                  <span id="watch_later_icon-{{movie.id}}" class="fa fa-clock-o" style="color: {% if movie.id in watch_later_movies %}gold{% else %}gray{% endif %};"></span>
+              </button>
+          </div>
+      </div>
+  </div>
+  {% endfor %}
+</div>
+  
+{% endblock body %}
+
+{% block scripts %}
+    <script src="{% static "js/main.js" %}"></script>
+    <script src="{% static 'js/movie_details.js' %}"></script>
+{% endblock %}
